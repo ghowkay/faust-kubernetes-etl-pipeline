@@ -1,0 +1,42 @@
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.1.10
+    networks:
+      - data_pipeline
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    networks:
+      - data_pipeline
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+  data-pipeline-app:
+    build: .
+    environment:
+      - KAFKA_BROKER_URL=kafka:9092
+    depends_on:
+      - kafka
+    command: ["/usr/src/app/startup.sh","kafka", "9092","/usr/src/app/data_extraction.py"]
+    networks:
+      - data_pipeline
+    volumes:
+      - ./dataset:/tmp
+    ports:
+      - "6066:6066"
+networks:
+  data_pipeline:
+    driver: bridge

@@ -1,0 +1,3 @@
+requests==2.26.0
+kafka-python==2.0.2
+faust-streaming==0.10.21
